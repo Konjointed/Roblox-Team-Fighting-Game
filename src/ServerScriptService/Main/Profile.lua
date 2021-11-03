@@ -40,7 +40,7 @@ end
 local function PlayerAdded(Player)
 	local Profile = ProfileModule.ProfileStore:LoadProfileAsync("Player_"..Player.UserId)
 	if Profile ~= nil then
-		Profile:Reconcile() --Fill in missing variables from template (optional)
+		Profile:Reconcile() --Fill in missing variables from template (optional).
 		Profile:ListenToRelease(function()
 			ProfileModule.Profiles[Player] = nil
 			Player:Kick()
