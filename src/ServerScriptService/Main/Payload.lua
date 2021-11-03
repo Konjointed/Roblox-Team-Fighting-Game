@@ -1,8 +1,5 @@
 --| Services |--
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local SSS = game:GetService("ServerScriptService")
-local ServerStorage = game:GetService("ServerStorage")
 local TS = game:GetService("TweenService")
 
 --| Modules |--
@@ -11,7 +8,6 @@ local Server = require(SSS:WaitForChild("Main").Server)
 
 --| Constants |--
 local PAYLOAD = workspace:WaitForChild("Payload")
-local PAYLOAD_MODEL = PAYLOAD.Model
 local PAYLOAD_RADIUS = PAYLOAD.Radius
 local PAYLOAD_ZONE = Zone.new(PAYLOAD_RADIUS)
 
@@ -25,7 +21,6 @@ local Forwards = false
 
 --| Payload Settings |--
 local Speed = 10
-local RotationSpeed = 1
 
 local Payload = {}
 
@@ -50,15 +45,13 @@ I sometimes can't wrap my brain around all of this
 but basically move the payload to the next node and then get the child of the node a.k.a the next node and move to it
 however if the payload is being pushed backwards we wanna go to the previous node a.k.a the parent of the current.
 --]]
-local RachedNodes = {}
 local CurrentNode = Map.Node
-local PreviousNode
-local PreviousDirection
 local CurrentDirection
 function MovePayload(direction)
 	Moving = true
 	local ReachEnd = false
 	while Moving and ReachEnd == false do
+		--this probably isn't needed, but so far this seems to prevent an issue with having the payload moving backwards when it should be going forward
 		if Backwards then
 			if CurrentDirection ~= "backwards" then
 				CurrentDirection = "backwards"
@@ -77,7 +70,7 @@ function MovePayload(direction)
 
 		local Distance = (PAYLOAD.Primary.Position - CurrentNode.Position).Magnitude
 		local Time = Distance/Speed
-		--Move
+
 		local MovementInfo = TweenInfo.new(
 			Time,
 			Enum.EasingStyle.Linear,
@@ -95,9 +88,11 @@ function MovePayload(direction)
 						CurrentNode = CurrentNode.Parent
 					end
 				elseif direction == "forward" then
-					CurrentNode = NextNode[1]
+					if NextNode[1] then
+						CurrentNode = NextNode[1]
+					end
 				end
-				warn(Server.SERVER_NAME.."Current Node: "..CurrentNode.Name)
+				warn(Server.SERVER_NAME.."Moving to: "..CurrentNode.Name)
 			else
 				warn(Server.SERVER_NAME.."Payload reached end")
 				ReachEnd = true
@@ -113,7 +108,7 @@ function StopPayload()
 	end
 end
 
---This funciton handles checking what to do with the payload (moving it or not) when a player enters or leaves
+--This funciton handles checking what to do with the payload (moving it or not) based on how many players are in the zone
 function Logic()
 	if Payload.Active then
 		warn(Server.SERVER_NAME.."Attackers: "..AttackersInZone)
@@ -142,6 +137,8 @@ function Logic()
 	end
 end
 
+--Function called when player enters the zone. Check if the player is in Attackers or Defenders table and then adds 1 to the variable
+--which is used for the payload logic
 function TeamCheck(Player,Number)
 	if table.find(Server.Attackers,Player.Name) then
 		AttackersInZone += Number
@@ -165,14 +162,14 @@ PAYLOAD_ZONE.itemExited:Connect(function(npc)
 end)
 
 PAYLOAD_ZONE:trackItem(workspace.R6)
---
+--END OF TEMP CODE
 
 --When a player enters the zone add 1 to AttackersInZone/DefendersInZone
 PAYLOAD_ZONE.playerEntered:Connect(function(Player)
 	TeamCheck(Player,1)
 end)
 
---When a player enters the zone remove 1 from AttackersInZone/DefendersInZone
+--When a player leaves the zone remove 1 from AttackersInZone/DefendersInZone
 PAYLOAD_ZONE.playerExited:Connect(function(Player)
 	TeamCheck(Player,-1)
 end)

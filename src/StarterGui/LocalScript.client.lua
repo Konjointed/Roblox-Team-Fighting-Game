@@ -19,5 +19,4 @@ CaptureProgress:GetPropertyChangedSignal("Value"):Connect(function()
 	TS:Create(CaptureBar,Info,{Size = UDim2.fromScale(Progress,1)}):Play()
 end)
 
---HELLO
 

@@ -1,9 +1,6 @@
 --| Services |--
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local SSS = game:GetService("ServerScriptService")
-local ServerStorage = game:GetService("ServerStorage")
-local TS = game:GetService("TweenService")
 local RepStorage = game:GetService("ReplicatedStorage")
 
 --| Modules |--
@@ -21,34 +18,57 @@ local Point = {}
 local CaptureProgress = RepStorage.GameValues:WaitForChild("CaptureProgress")
 local Max = 200
 Point.Active = false
+local AttackersInZone = 0
+local DefendersInZone = 0
 
-POINT_ZONE.playerEntered:Connect(function(Player)
+local function AmountInZone(Player,Number)
+	if table.find(Server.Attackers,Player.Name) then
+		AttackersInZone += Number
+	elseif table.find(Server.Defenders,Player.Name) then
+		DefendersInZone += Number
+	end
+end
+
+local function EnableCaptureFrame(bool)
+	for _,Player in pairs(Players:GetChildren()) do
+		Player.PlayerGui.ScreenGui.Frame.CaptureBackground.Visible = bool
+	end
+end
+
+local function Logic()
 	if Point.Active then
-		Player.PlayerGui.ScreenGui.Frame.CaptureBackground.Visible = true
-		while #POINT_ZONE:getPlayers() >= 1 and CaptureProgress.Value ~= Max do
-			CaptureProgress.Value += 5
-			print(CaptureProgress.Value.."/"..Max)
-			wait(0.5)
+		if AttackersInZone >= 1 and DefendersInZone == 0 then
+			EnableCaptureFrame(true)
+			while (AttackersInZone >= 1) and (DefendersInZone == 0) and (CaptureProgress.Value) ~= Max do
+				CaptureProgress.Value += 5
+				print(CaptureProgress.Value.."/"..Max)
+				task.wait(0.5)
+			end
 		end
 
 		if CaptureProgress.Value == Max then
-			PayloadLogic.Active = true
+			PayloadLogic.Active = true --Activate payload so it can be pushed
+			EnableCaptureFrame(false) --Disable everyones capture gui
 		else
-			while #POINT_ZONE:getPlayers() ~= 1 and CaptureProgress.Value ~= 0 do
+			while CaptureProgress.Value ~= 0 do
 				CaptureProgress.Value -= 5
 				print(CaptureProgress.Value.."/"..Max)
-				wait(0.5)
+				task.wait(0.5)
 			end
-			Player.PlayerGui.ScreenGui.Frame.CaptureBackground.Visible = false
+			EnableCaptureFrame(false)
 		end
 	else
 		warn(Server.SERVER_NAME.."Point is not active yet")
 	end
+end
+
+POINT_ZONE.playerEntered:Connect(function(Player)
+	AmountInZone(Player,1)
+	Logic()
 end)
 
 POINT_ZONE.playerExited:Connect(function(Player)
-
+	AmountInZone(Player,-1)
 end)
-
 
 return Point
