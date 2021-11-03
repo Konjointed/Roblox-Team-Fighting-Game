@@ -15,13 +15,13 @@ local PayloadModule = require(SSS:WaitForChild("Main").PayloadModule)
 --| Variables |--
 local CaptureProgress = RepStorage.GameValues:WaitForChild("CaptureProgress")
 
-function Point.new(PointModel)
+function Point.new(PointModel,Active,Max)
 	local NewPoint = {
 		PointZone = Zone.new(PointModel.Zone),
-		Max = 10,
+		Max = Max,
 		AttackersInZone = 0,
 		DefendersInZone = 0,
-        Active = false	
+        Active = Active,	
 	}
 
 	NewPoint.PointZone.playerEntered:Connect(function(Player)
