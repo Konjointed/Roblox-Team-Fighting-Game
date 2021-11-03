@@ -50,7 +50,7 @@ local function PlayerAdded(Player)
 			--A profile has been successfully loaded:
 			LoadedProfile(Player,Profile)
 		else
-			--Player left before the profile loaded
+			--Player left before the profile loaded.
 			Profile:Release()
 		end
 	else
