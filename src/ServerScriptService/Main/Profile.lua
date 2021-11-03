@@ -2,15 +2,14 @@ local ProfileModule = {}
 
 local ProfileTemplate = {
 	IsBanned = false,
-	LogInTimes = 0,
+	IsAdmin = false,
 	Gold = 0,
 }
 
 --| Services |--
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local SSS = game:GetService("ServerScriptService")
-local ServerStorage = game:GetService("ServerStorage")
+local Server = require(SSS:WaitForChild("Main").Server)
 
 --| Modules |--
 local PS = require(SSS:WaitForChild("APIs").ProfileService)
@@ -32,10 +31,10 @@ function ProfileModule:GiveCash(Profile,Amount)
 end
 
 local function LoadedProfile(Player,Profile)
-	Profile.Data.LogInTimes += 1
-	warn(Player.Name.." has logged in "..tostring(Profile.Data.LogInTimes).." time(s)")
-	ProfileModule:GiveCash(Profile,100)
-	print(Player.Name.." owns "..tostring(Profile.Data.Cash).." now!")
+	if Profile.Data.IsAdmin then
+		warn(Server.SERVER_NAME..Player.Name.." is an admin (manually added)")
+		table.insert(_G.ServerAdmins,Player.UserId)
+	end
 end
 
 local function PlayerAdded(Player)

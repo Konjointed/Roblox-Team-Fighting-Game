@@ -4,7 +4,7 @@ local Server = {}
 Server.SERVER_NAME = "[SERVER]: "
 
 --| Variables |--
-Server.Attackers = {"Konjointed"}
-Server.Defenders = {"R6"}
+Server.Attackers = {}
+Server.Defenders = {}
 
 return Server

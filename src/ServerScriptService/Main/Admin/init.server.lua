@@ -5,9 +5,10 @@ local RepStorage = game:GetService("ReplicatedStorage")
 local SSS = game:GetService("ServerScriptService")
 
 --| Modules |--
-local PayloadLogic = require(SSS:WaitForChild("Main").Payload)
-local PointLogic = require(SSS:WaitForChild("Main").Point)
+local PointModule = require(SSS:WaitForChild("Main").PointModule)
+local PayloadModule = require(SSS:WaitForChild("Main").PayloadModule)
 local Data = require(SSS:WaitForChild("Main").Profile)
+local Server = require(SSS:WaitForChild("Main").Server)
 
 --| Variables |--
 local Remotes = RepStorage:WaitForChild("Remotes")
@@ -15,6 +16,7 @@ local BanLogBot = "https://discord.com/api/webhooks/904771424248533033/RjWdcFvAn
 local CommandLogBot = "https://discord.com/api/webhooks/904771543660372079/rIPczup4nBAZnBlSgSFM5T_Ub8Hf09uGFta7ns2659TILU3shNuaStqdmUFVyekX9RKY"
 local Prefix = ";"
 local Commands = {}
+--hard-coded list admins (only very trusted people)
 local Admins = {
 
 	--| Friends / Trusted People
@@ -23,6 +25,14 @@ local Admins = {
 	2596934398, --Konjointed (Me also main account)
 	2022410158; --FalseUnderstanding (previous alt)
 	85034342; --Salty (friend)
+
+}
+--A list of current admins in the game (basically the people who have IsAdmin true in their data)
+_G.ServerAdmins = { --to lazy to turn this into a module so yeah
+
+}
+--hard-coded list of banned admins which gets checked first so if you're in it you don't get admin no matter what
+local BannedAdmins = {
 
 }
 
@@ -58,17 +68,31 @@ local function FindPlayer(Target)
 	end
 end
 
+--| START OF COMMANDS |--
 --Each argument is a word in the message
+Commands.tempadmin = function(Sender,Arguments)
+	if #Arguments ~= 0 then
+		local Target = FindPlayer(Arguments[1])
+		table.remove(Arguments,1)
+		if Target ~= nil and Target ~= Sender.Name then
+			if not table.find(_G.ServerAdmins,Target.UserId) then
+				table.insert(_G.ServerAdmins,Target.UserId)
+				SendMessage(Sender,"Is now a temp admin")
+				SendMessage(Target,"You're now a temp admin")
+			end
+		end
+	end
+end
+
 Commands.admin = function(Sender,Arguments)
 	if #Arguments ~= 0 then
 		local Target = FindPlayer(Arguments[1])
 		table.remove(Arguments,1)
 		if Target ~= nil and Target ~= Sender.Name then
-			if not table.find(Admins,Target.UserId) then
-				table.insert(Admins,Target.UserId)
-				SendMessage(Sender,"Is now a temp admin")
-				SendMessage(Target,"You're now a temp admin;")
-			end
+			local Profile = Data.Profiles[Target]
+			Profile.Data.IsAdmin = true
+			SendMessage(Sender,"Is now an admin")
+			SendMessage(Target,"You're now an admin")
 		end
 	end
 end
@@ -78,10 +102,12 @@ Commands.unadmin = function(Sender,Arguments)
 		local Target = FindPlayer(Arguments[1])
 		table.remove(Arguments,1)
 		if Target ~= nil then
-			if table.find(Admins,Target.UserId) or table.find(Admins,Target.Name)  then
-				for i,v in pairs(Admins) do
+			if table.find(_G.ServerAdmins,Target.UserId) or table.find(_G.ServerAdmins,Target.Name)  then
+				for i,v in pairs(_G.ServerAdmins) do
 					if v == Target.UserId or v == Target.Name then
-						table.remove(Admins,i)
+						table.remove(_G.ServerAdmins,i)
+						local Profile = Data.Profiles[Target]
+						Profile.Data.IsAdmin = false
 						SendMessage(Sender,"Is no longer an admin")
 					end
 				end
@@ -168,16 +194,16 @@ end
 Commands.payloadactive = function(Sender,Arguments)
 	if #Arguments ~= 0 then
 		if Arguments[1] == "true" then
-			PayloadLogic.Active = true
+			PayloadModule.Payload.Active = true
 		elseif Arguments[1] == "false" then
-			PayloadLogic.Active = false
+			PayloadModule.Payload.Active = false
 		end
 
 		for _,Player in pairs(Players:GetPlayers()) do
-			if PayloadLogic.Active then
-				SendMessage(Sender,"The payload is now active")
+			if PayloadModule.Payload.Active then
+				SendMessage(Player,"The payload is now active")
 			else
-				SendMessage(Sender,"The payload is deactivated")
+				SendMessage(Player,"The payload is deactivated")
 			end
 		end
 	else
@@ -188,21 +214,36 @@ end
 Commands.pointactive = function(Sender,Arguments)
 	if #Arguments ~= 0 then
 		if Arguments[1] == "true" then
-			PointLogic.Active = true
+			PointModule.Point.Active = true
 		elseif Arguments[1] == "false" then
-			PointLogic.Active = false
+			PointModule.Point.Active = false
 		end
 
 		for _,Player in pairs(Players:GetPlayers()) do
-			if PointLogic.Active then
-				SendMessage(Sender,"The point is now active")
+			if PointModule.Point.Active then
+				SendMessage(Player,"The point is now active")
 			else
-				SendMessage(Sender,"The point is deactivated")
+				SendMessage(Player,"The point is deactivated")
 			end
 		end
 	else
 		SendMessage(Sender,"Command Usage: :pointactive [true/false]")
 	end 
+end
+
+Commands.bald = function(Sender,Arguments)
+	if #Arguments ~= 0 then
+		local Target = FindPlayer(Arguments[1])
+		table.remove(Arguments,1)
+
+		if Target ~= nil then
+			for _,Hat in pairs(Target.Character:GetChildren()) do
+				if Hat:IsA("Accessory") and Hat.AccessoryType == Enum.AccessoryType.Hair then
+					Hat:Destroy()
+				end
+			end
+		end
+	end
 end
 
 Commands.commands = function(Sender)
@@ -213,8 +254,19 @@ Commands.commands = function(Sender)
 	SendMessage(Sender,String)
 end
 
-
+--| END OF COMMANDS |--
 local function IsAdmin(Player)
+	if (table.find(BannedAdmins,Player.UserId)) or (table.find(BannedAdmins,Player.Name)) then
+		warn(Server.SERVER_NAME..Player.Name.." is a banned admin")
+		local Profile = Data.Profiles[Player]
+		Profile.Data.IsAdmin = false
+		return false
+	end
+
+	if table.find(_G.ServerAdmins,Player.UserId) then
+		return true	
+	end
+
 	for _,Admin in pairs (Admins) do
 		if type(Admin) == "string" and string.lower(Admin) == string.lower(Player.Name) then
 			return true
@@ -226,7 +278,8 @@ local function IsAdmin(Player)
 				return true
 			end
 		end
-	end
+	end	
+
 	return false
 end
 
