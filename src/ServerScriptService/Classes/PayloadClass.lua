@@ -53,11 +53,13 @@ function PayloadClass.new(PayloadModel)
     return setmetatable(newPayload,PayloadClass)
 end
 
+--Tweens the payload forwards or backwards to whatever the current node is (very basic system)
 function PayloadClass:Move(self,direction)
 	self.Moving = true
 	local ReachEnd = false
 	while self.Moving and ReachEnd == false do
-		--this probably isn't needed, but so far this seems to prevent an issue with having the payload moving backwards when it should be going forward
+		--this probably isn't needed, but so far this seems to prevent an issue with having the payload moving backwards 
+        --when it should be going forward
 		if self.Backwards then
 			if self.CurrentDirection ~= "backwards" then
 				self.CurrentDirection = "backwards"
@@ -74,6 +76,7 @@ function PayloadClass:Move(self,direction)
 			end
 		end
 
+        --calculate how fast the payload should be moving
 		local Distance = (self.Model.Primary.Position - self.CurrentNode.Position).Magnitude
 		local Time = Distance/self.Speed
 
@@ -86,6 +89,7 @@ function PayloadClass:Move(self,direction)
 		MovementTween:Play()
 		MovementTween.Completed:Wait()
 
+        --if the payload is still moving after the tween finishes then check for the next node to move to
 		if self.Moving then
 			local NextNode = self.CurrentNode:GetChildren()
 			if #NextNode > 0 then
@@ -107,6 +111,7 @@ function PayloadClass:Move(self,direction)
 	end
 end
 
+--Stops moving the payload by canceling the tween
 function PayloadClass:StopMoving(self)
     if self.Moving then
 		self.Moving = false
@@ -114,6 +119,7 @@ function PayloadClass:StopMoving(self)
 	end
 end
 
+--Checks what to do based on whos in the paylod radius
 function PayloadClass:Logic(self)
     if self.Active then
         warn(Server.SERVER_NAME.."Attackers: "..self.AttackersInZone)
@@ -142,6 +148,7 @@ function PayloadClass:Logic(self)
     end
 end
 
+--Adds or removes a number to either of the zones count (used to determine how many are in the radius)
 function PayloadClass:AmountOnPayload(self,Player,Number)
 	if table.find(Server.Attackers,Player.Name) then
 		self.AttackersInZone += Number

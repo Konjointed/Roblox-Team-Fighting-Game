@@ -41,6 +41,7 @@ function Point:IsActive()
 	return self.Active
 end
 
+--Increases the capture progress value
 function Point:Logic(self)
 	if self.Active then
 		if self.AttackersInZone >= 1 and self.DefendersInZone == 0 then
@@ -68,6 +69,7 @@ function Point:Logic(self)
 	end
 end
 
+--Enable the frame for all players
 function Point:EnableCaptureFrame(bool)
 	for _,Player in pairs(Players:GetChildren()) do
 		Player.PlayerGui.ScreenGui.Frame.CaptureBackground.Visible = bool
